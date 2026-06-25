@@ -1,0 +1,32 @@
+{
+    "author": "volksen",
+    "dependencies": {},
+    "keywords": [
+        "pebble-app"
+    ],
+    "name": "rainy-face",
+    "pebble": {
+        "displayName": "rainy face",
+        "enableMultiJS": true,
+        "messageKeys": [],
+        "projectType": "native",
+        "resources": {
+            "media": []
+        },
+        "sdkVersion": "3",
+        "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "gabbro",
+            "flint"
+        ],
+        "uuid": "f73c9639-10ea-4bfd-9d69-e39ec9bb8a20",
+        "watchapp": {
+            "watchface": true
+        }
+    },
+    "version": "0.0.1"
+}

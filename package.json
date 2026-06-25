@@ -11,7 +11,20 @@
         "messageKeys": [],
         "projectType": "native",
         "resources": {
-            "media": []
+            "media": [
+                {
+                    "type": "font",
+                    "name": "FONT_JERSEY_64",
+                    "file": "fonts/Jersey10-Regular.ttf",
+                    "compatibility": "2.7"
+                },
+                {
+                    "type": "font",
+                    "name": "FONT_JERSEY_24",
+                    "file": "fonts/Jersey10-Regular.ttf",
+                    "compatibility": "2.7"
+                }
+            ]
         },
         "sdkVersion": "3",
         "targetPlatforms": [

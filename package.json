@@ -8,7 +8,17 @@
     "pebble": {
         "displayName": "rainy face",
         "enableMultiJS": true,
-        "messageKeys": [],
+        "capabilities": [
+            "location"
+        ],
+        "messageKeys": [
+            "CURRENT_TEMPERATURE",
+            "CURRENT_CONDITIONS",
+            "DAILY_TEMPERATURE_MIN",
+            "DAILY_TEMPERATURE_MAX",
+            "DAILY_CONDITIONS",
+            "REQUEST_WEATHER"
+        ],
         "projectType": "native",
         "resources": {
             "media": [

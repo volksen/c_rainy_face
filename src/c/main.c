@@ -11,6 +11,10 @@ static int s_battery_level;
 static BitmapLayer *s_bt_icon_layer;
 static GBitmap *s_bt_icon_bitmap;
 
+// weather
+static TextLayer *s_current_weather_layer;
+static TextLayer *s_daily_weather_layer;
+
 static void update_time()
 {
   // Get a tm structure
@@ -35,6 +39,15 @@ static void update_time()
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed)
 {
   update_time();
+
+  // Get weather update every 30 minutes
+  if (tick_time->tm_min % 30 == 0)
+  {
+    DictionaryIterator *iter;
+    app_message_outbox_begin(&iter);
+    dict_write_uint8(iter, MESSAGE_KEY_REQUEST_WEATHER, 1);
+    app_message_outbox_send();
+  }
 }
 
 static void battery_callback(BatteryChargeState state)
@@ -135,15 +148,34 @@ static void main_window_load(Window *window)
   // text_layer_set_font(s_time_layer, s_time_font);
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
 
+  // Create weather TextLayers - aligned to the bottom of the screen
+  int weather_y = bounds.size.h - PBL_IF_ROUND_ELSE(60, 50);
+  int weather_height = 25;
+  s_current_weather_layer = text_layer_create(
+      GRect(0, weather_y, bounds.size.w, weather_height));
+  text_layer_set_background_color(s_current_weather_layer, GColorClear);
+  text_layer_set_text_color(s_current_weather_layer, GColorWhite);
+  text_layer_set_font(s_current_weather_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
+  text_layer_set_text_alignment(s_current_weather_layer, GTextAlignmentCenter);
+  text_layer_set_text(s_current_weather_layer, "Loading...");
+  // daily weather
+  s_daily_weather_layer = text_layer_create(GRect(0, weather_y + weather_height, bounds.size.w, weather_height));
+  text_layer_set_background_color(s_daily_weather_layer, GColorClear);
+  text_layer_set_text_color(s_daily_weather_layer, GColorWhite);
+  text_layer_set_font(s_daily_weather_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
+  text_layer_set_text_alignment(s_daily_weather_layer, GTextAlignmentCenter);
+  text_layer_set_text(s_daily_weather_layer, ":)");
+
   // Add layers to the Window
   layer_add_child(window_layer, s_battery_layer);
   layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(s_bt_icon_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_current_weather_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_daily_weather_layer));
 
   // Show the correct state of the BT connection from the start
   bluetooth_callback(connection_service_peek_pebble_app_connection());
-
 }
 
 static void main_window_unload(Window *window)
@@ -155,6 +187,57 @@ static void main_window_unload(Window *window)
 
   text_layer_destroy(s_date_layer);
   text_layer_destroy(s_time_layer);
+
+  text_layer_destroy(s_current_weather_layer);
+  text_layer_destroy(s_daily_weather_layer);
+}
+
+static void inbox_received_callback(DictionaryIterator *iterator, void *context)
+{
+  // current
+  Tuple *curr_temp_tuple = dict_find(iterator, MESSAGE_KEY_CURRENT_TEMPERATURE);
+  Tuple *curr_conditions_tuple = dict_find(iterator, MESSAGE_KEY_CURRENT_CONDITIONS);
+
+  if (curr_temp_tuple && curr_conditions_tuple)
+  {
+    static char curr_weather_layer_buffer[42];
+    snprintf(curr_weather_layer_buffer, sizeof(curr_weather_layer_buffer),
+             "%d°C %s",
+             (int)curr_temp_tuple->value->int32,
+             curr_conditions_tuple->value->cstring);
+    text_layer_set_text(s_current_weather_layer, curr_weather_layer_buffer);
+  }
+
+  // daily
+  Tuple *daily_temp_tuple_min = dict_find(iterator, MESSAGE_KEY_DAILY_TEMPERATURE_MIN);
+  Tuple *daily_temp_tuple_max = dict_find(iterator, MESSAGE_KEY_DAILY_TEMPERATURE_MAX);
+  Tuple *daily_conditions_tuple = dict_find(iterator, MESSAGE_KEY_DAILY_CONDITIONS);
+
+  if (daily_temp_tuple_min && daily_temp_tuple_max && daily_conditions_tuple)
+  {
+    static char daily_weather_layer_buffer[60];
+    snprintf(daily_weather_layer_buffer, sizeof(daily_weather_layer_buffer),
+             "%d°C / %d°C %s",
+             (int)daily_temp_tuple_min->value->int32,
+             (int)daily_temp_tuple_max->value->int32,
+             daily_conditions_tuple->value->cstring);
+    text_layer_set_text(s_daily_weather_layer, daily_weather_layer_buffer);
+  }
+}
+
+static void inbox_dropped_callback(AppMessageResult reason, void *context)
+{
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped!");
+}
+
+static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context)
+{
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
+}
+
+static void outbox_sent_callback(DictionaryIterator *iterator, void *context)
+{
+  APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
 }
 
 static void init()
@@ -187,6 +270,17 @@ static void init()
   // Register for Bluetooth connection updates
   connection_service_subscribe((ConnectionHandlers){
       .pebble_app_connection_handler = bluetooth_callback});
+
+  // Register AppMessage callbacks
+  app_message_register_inbox_received(inbox_received_callback);
+  app_message_register_inbox_dropped(inbox_dropped_callback);
+  app_message_register_outbox_failed(outbox_failed_callback);
+  app_message_register_outbox_sent(outbox_sent_callback);
+
+  // Open AppMessage
+  const int inbox_size = 128;
+  const int outbox_size = 128;
+  app_message_open(inbox_size, outbox_size);
 }
 
 static void deinit()

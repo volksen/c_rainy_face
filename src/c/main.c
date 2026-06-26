@@ -95,11 +95,6 @@ static void bluetooth_callback(bool connected)
   // Show icon if disconnected
   layer_set_hidden(bitmap_layer_get_layer(s_bt_icon_layer), connected);
 
-  // if (!connected)
-  // {
-  //   // Issue a vibrating alert
-  //   vibes_short_pulse();
-  // }
 }
 
 static void main_window_load(Window *window)
@@ -112,7 +107,7 @@ static void main_window_load(Window *window)
   // Create battery meter Layer - visible bar near the top
   int bar_width = bounds.size.w / 2;
   int bar_x = (bounds.size.w - bar_width) / 2;
-  int bar_y = PBL_IF_ROUND_ELSE(bounds.size.h / 8, bounds.size.h / 28);
+  int bar_y = PBL_IF_ROUND_ELSE(bounds.size.h / 8, bounds.size.h / 20);
   s_battery_layer = layer_create(GRect(bar_x, bar_y, bar_width, 8));
   layer_set_update_proc(s_battery_layer, battery_update_proc);
 
@@ -121,15 +116,15 @@ static void main_window_load(Window *window)
 
   // Create the BitmapLayer to display the GBitmap - below the battery bar, centered
   int bt_y = bar_y + 12;
-  s_bt_icon_layer = bitmap_layer_create(GRect((bounds.size.w - 30) / 2, bt_y, 30, 30));
+  s_bt_icon_layer = bitmap_layer_create(GRect((bounds.size.w - 30) / 2, bt_y, 15, 15));
   bitmap_layer_set_bitmap(s_bt_icon_layer, s_bt_icon_bitmap);
   bitmap_layer_set_compositing_mode(s_bt_icon_layer, GCompOpSet);
 
   // Center the time + date block vertically
-  int date_height = 28;
+  int date_height = 20;
   int time_height = 60;
   int block_height = time_height + date_height;
-  int date_y = (bounds.size.h / 2) - (block_height / 2) - 10;
+  int date_y = (bounds.size.h / 2) - (block_height / 2) - 20;
   int time_y = date_y + date_height;
 
   // Create the date TextLayer
@@ -149,7 +144,7 @@ static void main_window_load(Window *window)
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
 
   // Create weather TextLayers - aligned to the bottom of the screen
-  int weather_y = bounds.size.h - PBL_IF_ROUND_ELSE(70, 60);
+  int weather_y = bounds.size.h - PBL_IF_ROUND_ELSE(75, 65);
   int weather_height = 25;
   s_current_weather_layer = text_layer_create(
       GRect(0, weather_y, bounds.size.w, weather_height));
@@ -204,12 +199,12 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   {
     static char curr_weather_layer_buffer[40];
     snprintf(curr_weather_layer_buffer, sizeof(curr_weather_layer_buffer),
-             "%d°C %d.%d %d%% %s",
+             "%d°C %s: %d.%d %d%%",
              (int)curr_temp_tuple->value->int32,
+             curr_conditions_tuple->value->cstring,
              (int)(curr_rain_tuple->value->int32 / 10),
              (int)(curr_rain_prob_tuple->value->int32 % 10),
-             (int)curr_rain_prob_tuple->value->int32,
-             curr_conditions_tuple->value->cstring);
+             (int)curr_rain_prob_tuple->value->int32);
     text_layer_set_text(s_current_weather_layer, curr_weather_layer_buffer);
   }
 
@@ -226,14 +221,14 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   {
     static char daily_weather_layer_buffer[40];
     snprintf(daily_weather_layer_buffer, sizeof(daily_weather_layer_buffer),
-             "%d/%d %d.%d %d%% %dh %s",
+             "%d/%d %s: %d.%d %d%% %dh",
              (int)daily_temp_tuple_min->value->int32,
              (int)daily_temp_tuple_max->value->int32,
+             daily_conditions_tuple->value->cstring,
              (int)(daily_rain_sum_tuple->value->int32 / 10),
              (int)(daily_rain_sum_tuple->value->int32 % 10),
              (int)daily_rain_prob_max_tuple->value->int32,
-             (int)daily_rain_hours_tuple->value->int32,
-             daily_conditions_tuple->value->cstring);
+             (int)daily_rain_hours_tuple->value->int32);
     text_layer_set_text(s_daily_weather_layer, daily_weather_layer_buffer);
   }
 }

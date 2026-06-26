@@ -30,7 +30,7 @@
                 {
                     "type": "bitmap",
                     "name": "IMAGE_BT_ICON",
-                    "file": "images/bt-icon.png"
+                    "file": "images/bt-icon-small.png"
                 }
             ]
         },
@@ -44,5 +44,5 @@
             "watchface": true
         }
     },
-    "version": "0.0.6"
+    "version": "0.0.7"
 }

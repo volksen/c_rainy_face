@@ -149,20 +149,20 @@ static void main_window_load(Window *window)
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
 
   // Create weather TextLayers - aligned to the bottom of the screen
-  int weather_y = bounds.size.h - PBL_IF_ROUND_ELSE(60, 50);
+  int weather_y = bounds.size.h - PBL_IF_ROUND_ELSE(70, 60);
   int weather_height = 25;
   s_current_weather_layer = text_layer_create(
       GRect(0, weather_y, bounds.size.w, weather_height));
   text_layer_set_background_color(s_current_weather_layer, GColorClear);
   text_layer_set_text_color(s_current_weather_layer, GColorWhite);
-  text_layer_set_font(s_current_weather_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
+  text_layer_set_font(s_current_weather_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24));
   text_layer_set_text_alignment(s_current_weather_layer, GTextAlignmentCenter);
   text_layer_set_text(s_current_weather_layer, "Loading...");
   // daily weather
   s_daily_weather_layer = text_layer_create(GRect(0, weather_y + weather_height, bounds.size.w, weather_height));
   text_layer_set_background_color(s_daily_weather_layer, GColorClear);
   text_layer_set_text_color(s_daily_weather_layer, GColorWhite);
-  text_layer_set_font(s_daily_weather_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
+  text_layer_set_font(s_daily_weather_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24));
   text_layer_set_text_alignment(s_daily_weather_layer, GTextAlignmentCenter);
   text_layer_set_text(s_daily_weather_layer, ":)");
 
@@ -197,13 +197,18 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   // current
   Tuple *curr_temp_tuple = dict_find(iterator, MESSAGE_KEY_CURRENT_TEMPERATURE);
   Tuple *curr_conditions_tuple = dict_find(iterator, MESSAGE_KEY_CURRENT_CONDITIONS);
+  Tuple *curr_rain_tuple = dict_find(iterator, MESSAGE_KEY_CURRENT_RAIN);
+  Tuple *curr_rain_prob_tuple = dict_find(iterator, MESSAGE_KEY_CURRENT_RAIN_PROB);
 
-  if (curr_temp_tuple && curr_conditions_tuple)
+  if (curr_temp_tuple && curr_conditions_tuple && curr_rain_tuple && curr_rain_prob_tuple)
   {
-    static char curr_weather_layer_buffer[42];
+    static char curr_weather_layer_buffer[40];
     snprintf(curr_weather_layer_buffer, sizeof(curr_weather_layer_buffer),
-             "%d°C %s",
+             "%d°C %d.%d %d%% %s",
              (int)curr_temp_tuple->value->int32,
+             (int)(curr_rain_tuple->value->int32 / 10),
+             (int)(curr_rain_prob_tuple->value->int32 % 10),
+             (int)curr_rain_prob_tuple->value->int32,
              curr_conditions_tuple->value->cstring);
     text_layer_set_text(s_current_weather_layer, curr_weather_layer_buffer);
   }
@@ -213,13 +218,21 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   Tuple *daily_temp_tuple_max = dict_find(iterator, MESSAGE_KEY_DAILY_TEMPERATURE_MAX);
   Tuple *daily_conditions_tuple = dict_find(iterator, MESSAGE_KEY_DAILY_CONDITIONS);
 
-  if (daily_temp_tuple_min && daily_temp_tuple_max && daily_conditions_tuple)
+  Tuple *daily_rain_sum_tuple = dict_find(iterator, MESSAGE_KEY_DAILY_RAIN_SUM);
+  Tuple *daily_rain_hours_tuple = dict_find(iterator, MESSAGE_KEY_DAILY_RAIN_HOURS);
+  Tuple *daily_rain_prob_max_tuple = dict_find(iterator, MESSAGE_KEY_DAILY_RAIN_PROB_MAX);
+
+  if (daily_temp_tuple_min && daily_temp_tuple_max && daily_conditions_tuple && daily_rain_sum_tuple && daily_rain_hours_tuple && daily_rain_prob_max_tuple)
   {
-    static char daily_weather_layer_buffer[60];
+    static char daily_weather_layer_buffer[40];
     snprintf(daily_weather_layer_buffer, sizeof(daily_weather_layer_buffer),
-             "%d°C / %d°C %s",
+             "%d/%d %d.%d %d%% %dh %s",
              (int)daily_temp_tuple_min->value->int32,
              (int)daily_temp_tuple_max->value->int32,
+             (int)(daily_rain_sum_tuple->value->int32 / 10),
+             (int)(daily_rain_sum_tuple->value->int32 % 10),
+             (int)daily_rain_prob_max_tuple->value->int32,
+             (int)daily_rain_hours_tuple->value->int32,
              daily_conditions_tuple->value->cstring);
     text_layer_set_text(s_daily_weather_layer, daily_weather_layer_buffer);
   }

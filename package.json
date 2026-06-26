@@ -14,9 +14,14 @@
         "messageKeys": [
             "CURRENT_TEMPERATURE",
             "CURRENT_CONDITIONS",
+            "CURRENT_RAIN",
+            "CURRENT_RAIN_PROB",
             "DAILY_TEMPERATURE_MIN",
             "DAILY_TEMPERATURE_MAX",
             "DAILY_CONDITIONS",
+            "DAILY_RAIN_SUM",
+            "DAILY_RAIN_HOURS",
+            "DAILY_RAIN_PROB_MAX",
             "REQUEST_WEATHER"
         ],
         "projectType": "native",
@@ -39,5 +44,5 @@
             "watchface": true
         }
     },
-    "version": "0.0.3"
+    "version": "0.0.5"
 }
